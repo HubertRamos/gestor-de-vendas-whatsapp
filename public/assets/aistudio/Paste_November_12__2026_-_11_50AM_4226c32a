@@ -1,0 +1,2189 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Wallet,
+  Calendar,
+  Package,
+  Plus,
+  Search,
+  CheckCircle2,
+  Clock,
+  Trash2,
+  User,
+  X,
+  Menu,
+  DollarSign,
+  TrendingUp,
+  Receipt,
+  Paperclip,
+  LogOut,
+  ShieldCheck,
+  ChevronRight
+} from 'lucide-react';
+
+// --- INITIAL MOCK DATA FOR EVENT / CHAMPIONSHIP CONTEXT ---
+const INITIAL_PERIODS = [
+  { id: 'per_1', name: 'Campeonato de Verão 2026', status: 'Ativo', startDate: '2026-01-10', endDate: '2026-01-25', location: 'Arena Central' },
+  { id: 'per_2', name: 'Copa Regional de Futsal', status: 'Encerrado', startDate: '2025-11-05', endDate: '2025-11-12', location: 'Ginásio Municipal' },
+  { id: 'per_3', name: 'Torneio Beneficente de Tênis', status: 'Encerrado', startDate: '2025-08-15', endDate: '2025-08-17', location: 'Clube Esportivo' }
+];
+
+const INITIAL_PRODUCTS = [
+  { id: 'prod_1', name: 'Água Mineral 500ml', category: 'Bebidas', costPrice: 1.50, defaultPrice: 4.00 },
+  { id: 'prod_2', name: 'Cerveja Lata 350ml', category: 'Bebidas', costPrice: 3.20, defaultPrice: 8.00 },
+  { id: 'prod_3', name: 'Isotônico 500ml', category: 'Bebidas', costPrice: 4.00, defaultPrice: 10.00 },
+  { id: 'prod_4', name: 'Camiseta Oficial do Evento', category: 'Vestuário', costPrice: 22.00, defaultPrice: 50.00 },
+  { id: 'prod_5', name: 'Combo Salgado + Refris', category: 'Alimentação', costPrice: 6.00, defaultPrice: 15.00 },
+  { id: 'prod_6', name: 'Inscrição Categoria Open', category: 'Inscrições', costPrice: 0.00, defaultPrice: 120.00 }
+];
+
+const INITIAL_SALES = [
+  {
+    id: 'VND-1001',
+    periodId: 'per_1',
+    buyerName: 'Carlos Eduardo',
+    items: [
+      { productId: 'prod_4', name: 'Camiseta Oficial do Evento', qty: 2, unitPrice: 50.00 },
+      { productId: 'prod_2', name: 'Cerveja Lata 350ml', qty: 3, unitPrice: 8.00 }
+    ],
+    totalAmount: 124.00,
+    paidAmount: 124.00,
+    pendingAmount: 0.00,
+    paymentMethod: 'PIX',
+    status: 'Pago',
+    createdAt: '2026-01-15T10:30:00'
+  },
+  {
+    id: 'VND-1002',
+    periodId: 'per_1',
+    buyerName: 'Marcos Vinicius (Time Águia)',
+    items: [
+      { productId: 'prod_3', name: 'Isotônico 500ml', qty: 10, unitPrice: 10.00 },
+      { productId: 'prod_1', name: 'Água Mineral 500ml', qty: 12, unitPrice: 4.00 }
+    ],
+    totalAmount: 148.00,
+    paidAmount: 48.00,
+    pendingAmount: 100.00,
+    paymentMethod: 'Parcial (PIX + Fiado)',
+    status: 'Parcial',
+    createdAt: '2026-01-15T11:15:00'
+  },
+  {
+    id: 'VND-1003',
+    periodId: 'per_1',
+    buyerName: 'Lucas Ferreira',
+    items: [
+      { productId: 'prod_6', name: 'Inscrição Categoria Open', qty: 1, unitPrice: 120.00 }
+    ],
+    totalAmount: 120.00,
+    paidAmount: 0.00,
+    pendingAmount: 120.00,
+    paymentMethod: 'Fiado',
+    status: 'Fiado',
+    createdAt: '2026-01-15T14:00:00'
+  },
+  {
+    id: 'VND-0980',
+    periodId: 'per_2',
+    buyerName: 'Carlos Eduardo',
+    items: [
+      { productId: 'prod_2', name: 'Cerveja Lata 350ml', qty: 5, unitPrice: 8.00 }
+    ],
+    totalAmount: 40.00,
+    paidAmount: 0.00,
+    pendingAmount: 40.00,
+    paymentMethod: 'Fiado',
+    status: 'Fiado',
+    createdAt: '2025-11-10T16:20:00'
+  }
+];
+
+const INITIAL_DEBT_PAYMENTS = [
+  {
+    id: 'PAY-101',
+    saleId: 'VND-1002',
+    buyerName: 'Marcos Vinicius (Time Águia)',
+    amount: 30.00,
+    periodId: 'per_1',
+    paymentMethod: 'Dinheiro',
+    createdAt: '2026-01-16T09:00:00'
+  }
+];
+
+const INITIAL_EXPENSES = [
+  {
+    id: 'EXP-501',
+    periodId: 'per_1',
+    description: 'Aluguel de Tendas e Grades',
+    category: 'Infraestrutura',
+    amount: 450.00,
+    date: '2026-01-09'
+  },
+  {
+    id: 'EXP-502',
+    periodId: 'per_1',
+    description: 'Alimentação da Equipe de Apoio',
+    category: 'Alimentação',
+    amount: 180.00,
+    date: '2026-01-11'
+  }
+];
+
+const INITIAL_MERCHANDISE = [
+  {
+    id: 'MER-801',
+    periodId: 'per_1',
+    supplier: 'Distribuidora de Bebidas Geladas',
+    description: 'Lote de Cervejas e Águas',
+    amount: 850.00,
+    invoiceRef: 'NF-49201',
+    hasInvoice: true,
+    date: '2026-01-08'
+  },
+  {
+    id: 'MER-802',
+    periodId: 'per_1',
+    supplier: 'Confecções Esportivas Brasil',
+    description: '50 Camisetas Oficiais do Campeonato',
+    amount: 1100.00,
+    invoiceRef: 'NF-11849',
+    hasInvoice: true,
+    date: '2026-01-07'
+  }
+];
+
+export default function App() {
+  // --- LOCAL STORAGE INITIALIZATION ---
+  const [periods, setPeriods] = useState(() => {
+    const saved = localStorage.getItem('eventsales_periods');
+    return saved ? JSON.parse(saved) : INITIAL_PERIODS;
+  });
+
+  const [activePeriodId, setActivePeriodId] = useState(() => {
+    const saved = localStorage.getItem('eventsales_active_period');
+    return saved ? saved : 'per_1';
+  });
+
+  const [products, setProducts] = useState(() => {
+    const saved = localStorage.getItem('eventsales_products');
+    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+  });
+
+  const [sales, setSales] = useState(() => {
+    const saved = localStorage.getItem('eventsales_sales');
+    return saved ? JSON.parse(saved) : INITIAL_SALES;
+  });
+
+  const [debtPayments, setDebtPayments] = useState(() => {
+    const saved = localStorage.getItem('eventsales_debt_payments');
+    return saved ? JSON.parse(saved) : INITIAL_DEBT_PAYMENTS;
+  });
+
+  const [expenses, setExpenses] = useState(() => {
+    const saved = localStorage.getItem('eventsales_expenses');
+    return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
+  });
+
+  const [merchandise, setMerchandise] = useState(() => {
+    const saved = localStorage.getItem('eventsales_merchandise');
+    return saved ? JSON.parse(saved) : INITIAL_MERCHANDISE;
+  });
+
+  // Navigation & Layout State
+  const [activeTab, setActiveTab] = useState('inicio');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // --- PERSISTENCE EFFECT ---
+  useEffect(() => {
+    localStorage.setItem('eventsales_periods', JSON.stringify(periods));
+    localStorage.setItem('eventsales_active_period', activePeriodId);
+    localStorage.setItem('eventsales_products', JSON.stringify(products));
+    localStorage.setItem('eventsales_sales', JSON.stringify(sales));
+    localStorage.setItem('eventsales_debt_payments', JSON.stringify(debtPayments));
+    localStorage.setItem('eventsales_expenses', JSON.stringify(expenses));
+    localStorage.setItem('eventsales_merchandise', JSON.stringify(merchandise));
+  }, [periods, activePeriodId, products, sales, debtPayments, expenses, merchandise]);
+
+  // Current Active Period
+  const activePeriod = useMemo(() => {
+    return periods.find(p => p.id === activePeriodId) || periods[0] || { name: 'Sem Período' };
+  }, [periods, activePeriodId]);
+
+  // --- FORM STATES & MODALS ---
+  const [saleBuyer, setSaleBuyer] = useState('');
+  const [cart, setCart] = useState([]);
+  const [selectedProdId, setSelectedProdId] = useState('');
+  const [selectedProdQty, setSelectedProdQty] = useState(1);
+  const [salePaymentType, setSalePaymentType] = useState('A_VISTA');
+  const [salePaidNow, setSalePaidNow] = useState('');
+  const [salePaymentMethod, setSalePaymentMethod] = useState('PIX');
+
+  // Modals
+  const [modalNewPeriod, setModalNewPeriod] = useState(false);
+  const [modalNewProduct, setModalNewProduct] = useState(false);
+  const [modalEditProduct, setModalEditProduct] = useState(null);
+  const [modalNewExpense, setModalNewExpense] = useState(false);
+  const [modalNewMerchandise, setModalNewMerchandise] = useState(false);
+  const [modalPayDebt, setModalPayDebt] = useState(null);
+
+  // Filter States
+  const [salesSearch, setSalesSearch] = useState('');
+  const [productSearch, setProductSearch] = useState('');
+  const [debtSearch, setDebtSearch] = useState('');
+  const [financialSubTab, setFinancialSubTab] = useState('resumo');
+
+  // Form Fields
+  const [periodForm, setPeriodForm] = useState({ name: '', startDate: '', endDate: '', location: '' });
+  const [productForm, setProductForm] = useState({ name: '', category: 'Bebidas', costPrice: '', defaultPrice: '' });
+  const [expenseForm, setExpenseForm] = useState({ description: '', category: 'Infraestrutura', amount: '', date: '' });
+  const [merchandiseForm, setMerchandiseForm] = useState({ supplier: '', description: '', amount: '', invoiceRef: '', hasInvoice: true, date: '' });
+  const [debtPayForm, setDebtPayForm] = useState({ amount: '', paymentMethod: 'PIX' });
+
+  // --- HELPER FORMATTERS ---
+  const formatMoney = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+  const formatDate = (isoStr) => {
+    if (!isoStr) return '-';
+    const d = new Date(isoStr);
+    return isNaN(d.getTime()) ? isoStr : d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // --- FINANCIAL CALCULATIONS FOR CURRENT PERIOD ---
+  const currentPeriodSales = useMemo(() => sales.filter(s => s.periodId === activePeriodId), [sales, activePeriodId]);
+  const currentPeriodExpenses = useMemo(() => expenses.filter(e => e.periodId === activePeriodId), [expenses, activePeriodId]);
+  const currentPeriodMerchandise = useMemo(() => merchandise.filter(m => m.periodId === activePeriodId), [merchandise, activePeriodId]);
+  const currentPeriodDebtPayments = useMemo(() => debtPayments.filter(dp => dp.periodId === activePeriodId), [debtPayments, activePeriodId]);
+
+  const metrics = useMemo(() => {
+    const grossSalesTotal = currentPeriodSales.reduce((acc, s) => acc + s.totalAmount, 0);
+    const directCashFromSales = currentPeriodSales.reduce((acc, s) => acc + (s.paidAmount || 0), 0);
+    const debtCashReceivedThisPeriod = currentPeriodDebtPayments.reduce((acc, dp) => acc + dp.amount, 0);
+    const totalCashReceived = directCashFromSales + debtCashReceivedThisPeriod;
+    const periodPendingDebts = currentPeriodSales.reduce((acc, s) => acc + (s.pendingAmount || 0), 0);
+    const totalExpenses = currentPeriodExpenses.reduce((acc, e) => acc + e.amount, 0);
+    const totalMerchandiseCost = currentPeriodMerchandise.reduce((acc, m) => acc + m.amount, 0);
+    const netCashResult = totalCashReceived - (totalExpenses + totalMerchandiseCost);
+
+    return {
+      grossSalesTotal,
+      totalCashReceived,
+      directCashFromSales,
+      debtCashReceivedThisPeriod,
+      periodPendingDebts,
+      totalExpenses,
+      totalMerchandiseCost,
+      netCashResult
+    };
+  }, [currentPeriodSales, currentPeriodExpenses, currentPeriodMerchandise, currentPeriodDebtPayments]);
+
+  // --- GLOBAL DEBT AGGREGATION ---
+  const buyersWithDebt = useMemo(() => {
+    const debtMap = {};
+    sales.forEach(s => {
+      if (s.pendingAmount > 0) {
+        if (!debtMap[s.buyerName]) {
+          debtMap[s.buyerName] = {
+            buyerName: s.buyerName,
+            totalPending: 0,
+            salesList: []
+          };
+        }
+        debtMap[s.buyerName].totalPending += s.pendingAmount;
+        debtMap[s.buyerName].salesList.push(s);
+      }
+    });
+    return Object.values(debtMap);
+  }, [sales]);
+
+  const totalGlobalPendingDebts = useMemo(() => {
+    return buyersWithDebt.reduce((acc, b) => acc + b.totalPending, 0);
+  }, [buyersWithDebt]);
+
+  // --- CART & SALE ACTIONS ---
+  const handleAddToCart = () => {
+    if (!selectedProdId) return;
+    const prod = products.find(p => p.id === selectedProdId);
+    if (!prod) return;
+
+    const existingIndex = cart.findIndex(c => c.productId === selectedProdId);
+    if (existingIndex >= 0) {
+      const updated = [...cart];
+      updated[existingIndex].qty += Number(selectedProdQty);
+      setCart(updated);
+    } else {
+      setCart([...cart, {
+        productId: prod.id,
+        name: prod.name,
+        qty: Number(selectedProdQty),
+        unitPrice: prod.defaultPrice
+      }]);
+    }
+    setSelectedProdQty(1);
+  };
+
+  const handleRemoveFromCart = (index) => {
+    setCart(cart.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateCartPrice = (index, newPrice) => {
+    const updated = [...cart];
+    updated[index].unitPrice = parseFloat(newPrice) || 0;
+    setCart(updated);
+  };
+
+  const cartTotal = useMemo(() => {
+    return cart.reduce((acc, item) => acc + (item.qty * item.unitPrice), 0);
+  }, [cart]);
+
+  const handleRegisterSale = (e) => {
+    e.preventDefault();
+    if (!saleBuyer.trim()) {
+      alert('Por favor, informe o nome do comprador.');
+      return;
+    }
+    if (cart.length === 0) {
+      alert('Adicione ao menos um produto ao carrinho.');
+      return;
+    }
+
+    let paid = 0;
+    let pending = 0;
+    let status = 'Pago';
+
+    if (salePaymentType === 'A_VISTA') {
+      paid = cartTotal;
+      pending = 0;
+      status = 'Pago';
+    } else if (salePaymentType === 'FIADO') {
+      paid = 0;
+      pending = cartTotal;
+      status = 'Fiado';
+    } else if (salePaymentType === 'PARCIAL') {
+      const paidInput = parseFloat(salePaidNow) || 0;
+      if (paidInput >= cartTotal) {
+        paid = cartTotal;
+        pending = 0;
+        status = 'Pago';
+      } else {
+        paid = paidInput;
+        pending = cartTotal - paidInput;
+        status = 'Parcial';
+      }
+    }
+
+    const newSale = {
+      id: `VND-${Math.floor(1000 + Math.random() * 9000)}`,
+      periodId: activePeriodId,
+      buyerName: saleBuyer.trim(),
+      items: cart,
+      totalAmount: cartTotal,
+      paidAmount: paid,
+      pendingAmount: pending,
+      paymentMethod: salePaymentType === 'FIADO' ? 'Fiado' : salePaymentMethod,
+      status: status,
+      createdAt: new Date().toISOString()
+    };
+
+    setSales([newSale, ...sales]);
+    setSaleBuyer('');
+    setCart([]);
+    setSalePaymentType('A_VISTA');
+    setSalePaidNow('');
+  };
+
+  // --- DEBT PAYMENT ACTION ---
+  const handlePayDebtSubmit = (e) => {
+    e.preventDefault();
+    if (!modalPayDebt) return;
+
+    const payAmount = parseFloat(debtPayForm.amount);
+    if (!payAmount || payAmount <= 0) {
+      alert('Informe um valor válido para pagamento.');
+      return;
+    }
+
+    const buyerName = modalPayDebt.buyerName;
+    let remainingToPay = payAmount;
+    const updatedSales = [...sales];
+    const newPayments = [];
+
+    for (let i = 0; i < updatedSales.length; i++) {
+      if (remainingToPay <= 0) break;
+
+      const sale = updatedSales[i];
+      if (sale.buyerName === buyerName && sale.pendingAmount > 0) {
+        const paymentForThisSale = Math.min(sale.pendingAmount, remainingToPay);
+
+        sale.pendingAmount -= paymentForThisSale;
+        sale.paidAmount += paymentForThisSale;
+        sale.status = sale.pendingAmount === 0 ? 'Pago' : 'Parcial';
+
+        remainingToPay -= paymentForThisSale;
+
+        newPayments.push({
+          id: `PAY-${Math.floor(1000 + Math.random() * 9000)}`,
+          saleId: sale.id,
+          buyerName: buyerName,
+          amount: paymentForThisSale,
+          periodId: activePeriodId,
+          paymentMethod: debtPayForm.paymentMethod,
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
+
+    setSales(updatedSales);
+    setDebtPayments([...newPayments, ...debtPayments]);
+    setModalPayDebt(null);
+    setDebtPayForm({ amount: '', paymentMethod: 'PIX' });
+  };
+
+  // --- ENTITY HANDLERS ---
+  const handleCreatePeriod = (e) => {
+    e.preventDefault();
+    if (!periodForm.name) return;
+
+    const newP = {
+      id: `per_${Date.now()}`,
+      name: periodForm.name,
+      status: 'Ativo',
+      startDate: periodForm.startDate || new Date().toISOString().split('T')[0],
+      endDate: periodForm.endDate || '-',
+      location: periodForm.location || 'Não informada'
+    };
+
+    setPeriods([newP, ...periods]);
+    setActivePeriodId(newP.id);
+    setPeriodForm({ name: '', startDate: '', endDate: '', location: '' });
+    setModalNewPeriod(false);
+  };
+
+  const handleCreateProduct = (e) => {
+    e.preventDefault();
+    if (!productForm.name) return;
+
+    const newProd = {
+      id: `prod_${Date.now()}`,
+      name: productForm.name,
+      category: productForm.category,
+      costPrice: parseFloat(productForm.costPrice) || 0,
+      defaultPrice: parseFloat(productForm.defaultPrice) || 0
+    };
+
+    setProducts([...products, newProd]);
+    setProductForm({ name: '', category: 'Bebidas', costPrice: '', defaultPrice: '' });
+    setModalNewProduct(false);
+  };
+
+  const handleSaveEditedProduct = (e) => {
+    e.preventDefault();
+    if (!modalEditProduct) return;
+    setProducts(products.map(p => p.id === modalEditProduct.id ? modalEditProduct : p));
+    setModalEditProduct(null);
+  };
+
+  const handleCreateExpense = (e) => {
+    e.preventDefault();
+    if (!expenseForm.description || !expenseForm.amount) return;
+
+    const newExp = {
+      id: `EXP-${Math.floor(100 + Math.random() * 900)}`,
+      periodId: activePeriodId,
+      description: expenseForm.description,
+      category: expenseForm.category,
+      amount: parseFloat(expenseForm.amount),
+      date: expenseForm.date || new Date().toISOString().split('T')[0]
+    };
+
+    setExpenses([newExp, ...expenses]);
+    setExpenseForm({ description: '', category: 'Infraestrutura', amount: '', date: '' });
+    setModalNewExpense(false);
+  };
+
+  const handleCreateMerchandise = (e) => {
+    e.preventDefault();
+    if (!merchandiseForm.description || !merchandiseForm.amount) return;
+
+    const newMerch = {
+      id: `MER-${Math.floor(100 + Math.random() * 900)}`,
+      periodId: activePeriodId,
+      supplier: merchandiseForm.supplier || 'Fornecedor Diversos',
+      description: merchandiseForm.description,
+      amount: parseFloat(merchandiseForm.amount),
+      invoiceRef: merchandiseForm.invoiceRef || 'S/N',
+      hasInvoice: merchandiseForm.hasInvoice,
+      date: merchandiseForm.date || new Date().toISOString().split('T')[0]
+    };
+
+    setMerchandise([newMerch, ...merchandise]);
+    setMerchandiseForm({ supplier: '', description: '', amount: '', invoiceRef: '', hasInvoice: true, date: '' });
+    setModalNewMerchandise(false);
+  };
+
+  // Nav items configuration
+  const navItems = [
+    { id: 'inicio', label: 'Painel Geral', icon: LayoutDashboard },
+    { id: 'vendas', label: 'Vendas & Caixa', icon: ShoppingCart },
+    { id: 'financeiro', label: 'Financeiro', icon: Wallet },
+    { id: 'periodos', label: 'Períodos & Torneios', icon: Calendar },
+    { id: 'produtos', label: 'Produtos', icon: Package }
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#F4F6FB] text-[#1E293B] font-sans flex flex-col md:flex-row antialiased">
+
+      {/* MOBILE TOP HEADER */}
+      <header className="md:hidden bg-white border-b border-[#E2E8F0] px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+        <div className="flex items-center space-x-2.5">
+          <div className="w-8 h-8 bg-[#7C5CFF] rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-xs">
+            ES
+          </div>
+          <span className="font-bold text-[#1E293B] text-base tracking-tight">EventSales</span>
+        </div>
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="p-2 rounded-lg text-[#71809D] hover:bg-[#F4F6FB] transition-colors"
+          aria-label="Abrir Menu"
+        >
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </header>
+
+      {/* SIDEBAR (POLOCOIN AESTHETIC - WHITE, ROUNDED SELECTIONS, USER BADGE AT TOP) */}
+      <aside
+        className={`fixed md:sticky top-0 left-0 z-40 h-screen w-64 bg-white border-r border-[#E2E8F0] flex flex-col justify-between transition-transform duration-200 ease-in-out ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
+        <div>
+          {/* POLOCOIN PROFILE HEADER AT SIDEBAR TOP */}
+          <div className="p-5 border-b border-[#E2E8F0] flex flex-col items-center text-center space-y-2">
+            <div className="relative">
+              <div className="w-14 h-14 rounded-full bg-[#7C5CFF]/10 border-2 border-[#7C5CFF] flex items-center justify-center text-[#7C5CFF] font-black text-lg shadow-sm">
+                <ShieldCheck size={28} />
+              </div>
+              <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#16B981] border-2 border-white rounded-full" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-[#1E293B]">adm</h3>
+              <p className="text-[11px] font-medium text-[#71809D]">Gestão de Eventos</p>
+            </div>
+          </div>
+
+          {/* NAV LINKS WITH POLOCOIN STYLING */}
+          <nav className="p-4 space-y-1.5">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all ${
+                    isActive
+                      ? 'bg-[#7C5CFF] text-white shadow-sm'
+                      : 'text-[#71809D] hover:bg-[#F4F6FB] hover:text-[#1E293B]'
+                  }`}
+                >
+                  <Icon size={18} className={isActive ? 'text-white' : 'text-[#71809D]'} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* ACTIVE PERIOD SELECTOR AT SIDEBAR BOTTOM */}
+        <div className="p-4 border-t border-[#E2E8F0] bg-white space-y-3">
+          <div className="p-3 bg-[#F4F6FB] rounded-xl border border-[#E2E8F0] space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[#71809D] uppercase tracking-wider">Período Ativo</span>
+              <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${
+                activePeriod.status === 'Ativo' ? 'bg-[#16B981]/15 text-[#16B981]' : 'bg-[#71809D]/15 text-[#71809D]'
+              }`}>
+                {activePeriod.status}
+              </span>
+            </div>
+            <select
+              value={activePeriodId}
+              onChange={(e) => setActivePeriodId(e.target.value)}
+              className="w-full text-xs font-semibold text-[#1E293B] bg-white border border-[#E2E8F0] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#7C5CFF]"
+            >
+              {periods.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </aside>
+
+      {/* MOBILE BACKDROP */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="fixed inset-0 bg-black/20 z-30 md:hidden backdrop-blur-xs"
+        />
+      )}
+
+      {/* MAIN CONTAINER */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+        {/* TOP HEADER BAR (POLOCOIN CLEAN STYLE) */}
+        <header className="h-16 bg-white border-b border-[#E2E8F0] px-6 flex items-center justify-between sticky top-0 z-20 shadow-2xs">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-lg bg-[#7C5CFF] flex items-center justify-center text-white font-black text-sm">
+              ES
+            </div>
+            <div>
+              <h2 className="text-sm font-extrabold text-[#1E293B]">
+                EventSales <span className="text-xs font-medium text-[#71809D] hidden sm:inline">| Painel do Organizador</span>
+              </h2>
+            </div>
+            <span className="hidden lg:inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#7C5CFF]/10 text-[#7C5CFF]">
+              {activePeriod.name}
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            {activeTab === 'vendas' && (
+              <button
+                onClick={() => {
+                  const el = document.getElementById('buyer-input');
+                  if (el) el.focus();
+                }}
+                className="h-9 px-4 bg-[#7C5CFF] hover:bg-[#6D4AFF] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center space-x-1.5"
+              >
+                <Plus size={15} />
+                <span>Nova Venda</span>
+              </button>
+            )}
+
+            {activeTab === 'financeiro' && (
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setModalNewExpense(true)}
+                  className="h-9 px-3 bg-white border border-[#E2E8F0] hover:bg-[#F4F6FB] text-[#1E293B] text-xs font-bold rounded-xl transition-all flex items-center space-x-1"
+                >
+                  <Plus size={14} />
+                  <span>Despesa</span>
+                </button>
+                <button
+                  onClick={() => setModalNewMerchandise(true)}
+                  className="h-9 px-3 bg-[#7C5CFF] hover:bg-[#6D4AFF] text-white text-xs font-bold rounded-xl transition-all flex items-center space-x-1 shadow-xs"
+                >
+                  <Plus size={14} />
+                  <span>Compra Mercadoria</span>
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'periodos' && (
+              <button
+                onClick={() => setModalNewPeriod(true)}
+                className="h-9 px-4 bg-[#7C5CFF] hover:bg-[#6D4AFF] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center space-x-1.5"
+              >
+                <Plus size={15} />
+                <span>Criar Novo Evento</span>
+              </button>
+            )}
+
+            {activeTab === 'produtos' && (
+              <button
+                onClick={() => setModalNewProduct(true)}
+                className="h-9 px-4 bg-[#7C5CFF] hover:bg-[#6D4AFF] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center space-x-1.5"
+              >
+                <Plus size={15} />
+                <span>Cadastrar Produto</span>
+              </button>
+            )}
+
+            <div className="pl-3 border-l border-[#E2E8F0] flex items-center space-x-2">
+              <div className="flex items-center space-x-1.5 text-xs font-semibold text-[#71809D]">
+                <User size={15} />
+                <span className="hidden md:inline text-[#1E293B]">adm</span>
+              </div>
+              <button
+                onClick={() => alert('Sessão mantida ativa no navegador.')}
+                className="text-[#EF4444] hover:bg-[#EF4444]/10 p-1.5 rounded-lg text-xs font-bold transition-colors ml-1"
+                title="Sair"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* PAGE CONTENT BODY */}
+        <div className="p-6 max-w-7xl w-full mx-auto space-y-6">
+
+          {/* ========================================================= */}
+          {/* SCREEN 1: INÍCIO (POLOCOIN CARDS & HIGHLIGHTED METRICS)    */}
+          {/* ========================================================= */}
+          {activeTab === 'inicio' && (
+            <div className="space-y-6">
+
+              {/* WELCOME / BANNER SUMMARY */}
+              <div className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-[#1E293B]">Painel Geral do Evento</h2>
+                  <p className="text-xs text-[#71809D]">Visão consolidada de caixa, arrecadações e cobranças em <strong className="text-[#1E293B]">{activePeriod.name}</strong></p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-[#71809D] font-semibold">Local:</span>
+                  <span className="px-3 py-1 rounded-full bg-[#F4F6FB] border border-[#E2E8F0] text-xs font-bold text-[#1E293B]">
+                    {activePeriod.location}
+                  </span>
+                </div>
+              </div>
+
+              {/* POLOCOIN STYLE ACCENTED METRIC CARDS (LEFT BORDER HIGHLIGHTS) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+
+                {/* DINHEIRO EM CAIXA (GREEN ACCENT BORDER) */}
+                <div className="bg-white p-4 rounded-2xl border border-[#E2E8F0] border-l-4 border-l-[#16B981] shadow-sm space-y-1">
+                  <div className="flex items-center justify-between text-[#71809D]">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider">Dinheiro em Caixa</span>
+                    <Wallet size={16} className="text-[#16B981]" />
+                  </div>
+                  <div className="text-xl font-black text-[#16B981]">
+                    {formatMoney(metrics.totalCashReceived)}
+                  </div>
+                  <p className="text-[10px] text-[#71809D] font-medium">
+                    À vista + Fiados pagos
+                  </p>
+                </div>
+
+                {/* VENDAS TOTAIS (PURPLE ACCENT BORDER) */}
+                <div className="bg-white p-4 rounded-2xl border border-[#E2E8F0] border-l-4 border-l-[#7C5CFF] shadow-sm space-y-1">
+                  <div className="flex items-center justify-between text-[#71809D]">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider">Total em Vendas</span>
+                    <TrendingUp size={16} className="text-[#7C5CFF]" />
+                  </div>
+                  <div className="text-xl font-black text-[#1E293B]">
+                    {formatMoney(metrics.grossSalesTotal)}
+                  </div>
+                  <p className="text-[10px] text-[#71809D] font-medium">
+                    {currentPeriodSales.length} transações no período
+                  </p>
+                </div>
+
+                {/* FIADOS PENDENTES (WARNING ACCENT BORDER) */}
+                <div className="bg-white p-4 rounded-2xl border border-[#E2E8F0] border-l-4 border-l-[#F5A623] shadow-sm space-y-1">
+                  <div className="flex items-center justify-between text-[#71809D]">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider">Pendentes (Fiado)</span>
+                    <Clock size={16} className="text-[#F5A623]" />
+                  </div>
+                  <div className="text-xl font-black text-[#F5A623]">
+                    {formatMoney(metrics.periodPendingDebts)}
+                  </div>
+                  <p className="text-[10px] text-[#71809D] font-medium">
+                    A receber deste evento
+                  </p>
+                </div>
+
+                {/* TOTAL DE CUSTOS (ERROR ACCENT BORDER) */}
+                <div className="bg-white p-4 rounded-2xl border border-[#E2E8F0] border-l-4 border-l-[#EF4444] shadow-sm space-y-1">
+                  <div className="flex items-center justify-between text-[#71809D]">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider">Total de Custos</span>
+                    <Receipt size={16} className="text-[#EF4444]" />
+                  </div>
+                  <div className="text-xl font-black text-[#EF4444]">
+                    {formatMoney(metrics.totalExpenses + metrics.totalMerchandiseCost)}
+                  </div>
+                  <p className="text-[10px] text-[#71809D] font-medium">
+                    Despesas + Compras
+                  </p>
+                </div>
+
+                {/* RESULTADO LÍQUIDO */}
+                <div className="bg-white p-4 rounded-2xl border border-[#E2E8F0] border-l-4 border-l-[#3B82F6] shadow-sm space-y-1 sm:col-span-2 lg:col-span-1">
+                  <div className="flex items-center justify-between text-[#71809D]">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider">Resultado do Evento</span>
+                    <DollarSign size={16} className="text-[#3B82F6]" />
+                  </div>
+                  <div className={`text-xl font-black ${metrics.netCashResult >= 0 ? 'text-[#16B981]' : 'text-[#EF4444]'}`}>
+                    {formatMoney(metrics.netCashResult)}
+                  </div>
+                  <p className="text-[10px] text-[#71809D] font-medium">
+                    Caixa real líquido
+                  </p>
+                </div>
+
+              </div>
+
+              {/* DASHBOARD SPLIT LAYOUT */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* RECENT SALES TABLE */}
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-[#E2E8F0] shadow-sm overflow-hidden flex flex-col">
+                  <div className="p-5 border-b border-[#E2E8F0] flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xs font-extrabold text-[#1E293B] uppercase tracking-wider">Vendas Recentes</h3>
+                      <p className="text-xs text-[#71809D]">Últimas movimentações em {activePeriod.name}</p>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('vendas')}
+                      className="text-xs font-bold text-[#7C5CFF] hover:underline flex items-center space-x-1"
+                    >
+                      <span>Ir para Vendas</span>
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-[#F4F6FB] text-[#71809D] font-bold border-b border-[#E2E8F0]">
+                        <tr>
+                          <th className="px-4 py-3">Comprador</th>
+                          <th className="px-4 py-3">Itens</th>
+                          <th className="px-4 py-3 text-right">Valor Total</th>
+                          <th className="px-4 py-3 text-right">Valor Pago</th>
+                          <th className="px-4 py-3 text-center">Pagamento</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E2E8F0]">
+                        {currentPeriodSales.length === 0 ? (
+                          <tr>
+                            <td colSpan="5" className="px-4 py-8 text-center text-[#71809D]">
+                              Nenhuma venda registrada neste evento ainda.
+                            </td>
+                          </tr>
+                        ) : (
+                          currentPeriodSales.slice(0, 6).map((sale) => (
+                            <tr key={sale.id} className="hover:bg-[#F4F6FB]/60 transition-colors">
+                              <td className="px-4 py-3.5 font-bold text-[#1E293B]">
+                                {sale.buyerName}
+                                <div className="text-[10px] text-[#71809D] font-normal">{formatDate(sale.createdAt)}</div>
+                              </td>
+                              <td className="px-4 py-3.5 text-[#71809D]">
+                                {sale.items.map(i => `${i.qty}x ${i.name}`).join(', ')}
+                              </td>
+                              <td className="px-4 py-3.5 text-right font-black text-[#1E293B]">
+                                {formatMoney(sale.totalAmount)}
+                              </td>
+                              <td className="px-4 py-3.5 text-right font-bold text-[#16B981]">
+                                {formatMoney(sale.paidAmount)}
+                              </td>
+                              <td className="px-4 py-3.5 text-center">
+                                <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
+                                  sale.status === 'Pago'
+                                    ? 'bg-[#16B981]/10 text-[#16B981]'
+                                    : sale.status === 'Parcial'
+                                    ? 'bg-[#F5A623]/10 text-[#F5A623]'
+                                    : 'bg-[#EF4444]/10 text-[#EF4444]'
+                                }`}>
+                                  {sale.status} ({sale.paymentMethod})
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* ALERT DEBTORS CARD */}
+                <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm p-5 flex flex-col justify-between space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-xs font-extrabold text-[#1E293B] uppercase tracking-wider">Alertas de Fiados Pendentes</h3>
+                      <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-[#F5A623]/15 text-[#F5A623]">
+                        {buyersWithDebt.length} Compradores
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#71809D] mb-4">
+                      Dívidas ativas acumuladas (inclui eventos anteriores):
+                    </p>
+
+                    <div className="space-y-2.5 max-h-[280px] overflow-y-auto pr-1">
+                      {buyersWithDebt.length === 0 ? (
+                        <div className="text-center py-6 text-xs text-[#71809D] bg-[#F4F6FB] rounded-xl border border-[#E2E8F0]">
+                          <CheckCircle2 size={22} className="mx-auto text-[#16B981] mb-1" />
+                          Nenhum fiado pendente no sistema.
+                        </div>
+                      ) : (
+                        buyersWithDebt.map((debtor) => (
+                          <div key={debtor.buyerName} className="p-3 bg-[#F4F6FB] rounded-xl border border-[#E2E8F0] flex items-center justify-between">
+                            <div>
+                              <p className="text-xs font-bold text-[#1E293B]">{debtor.buyerName}</p>
+                              <p className="text-[10px] text-[#71809D]">{debtor.salesList.length} venda(s) pendente(s)</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs font-black text-[#EF4444]">{formatMoney(debtor.totalPending)}</p>
+                              <button
+                                onClick={() => {
+                                  setActiveTab('financeiro');
+                                  setFinancialSubTab('fiados');
+                                }}
+                                className="text-[10px] font-bold text-[#7C5CFF] hover:underline"
+                              >
+                                Receber
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-[#E2E8F0] flex justify-between items-center text-xs">
+                    <span className="text-[#71809D] font-medium">Total a Receber:</span>
+                    <strong className="text-[#EF4444] font-black text-sm">{formatMoney(totalGlobalPendingDebts)}</strong>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* SCREEN 2: TELA DE VENDAS (REGISTER FORM & HISTORIC)       */}
+          {/* ========================================================= */}
+          {activeTab === 'vendas' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+              {/* QUICK SALE FORM CARD (5 COLS) */}
+              <div className="lg:col-span-5 bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-sm space-y-4">
+                <div className="border-b border-[#E2E8F0] pb-3 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#1E293B]">Registrar Venda Rápida</h3>
+                    <p className="text-xs text-[#71809D]">Insira o comprador e selecione os itens</p>
+                  </div>
+                  <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-[#7C5CFF]/15 text-[#7C5CFF]">
+                    Caixa Aberto
+                  </span>
+                </div>
+
+                <form onSubmit={handleRegisterSale} className="space-y-4">
+                  {/* COMPRADOR */}
+                  <div>
+                    <label className="block text-xs font-bold text-[#1E293B] mb-1">
+                      Comprador / Identificação <span className="text-[#EF4444]">*</span>
+                    </label>
+                    <input
+                      id="buyer-input"
+                      type="text"
+                      required
+                      placeholder="Ex: Lucas, Time Azul, Atleta #42"
+                      value={saleBuyer}
+                      onChange={(e) => setSaleBuyer(e.target.value)}
+                      className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF] text-[#1E293B]"
+                    />
+                  </div>
+
+                  {/* ADICIONAR ITEM AO CARRINHO */}
+                  <div className="p-3 bg-[#F4F6FB] rounded-xl border border-[#E2E8F0] space-y-2">
+                    <span className="text-[11px] font-extrabold text-[#1E293B] uppercase tracking-wider block">Adicionar Produtos</span>
+                    <div className="grid grid-cols-12 gap-2">
+                      <select
+                        value={selectedProdId}
+                        onChange={(e) => setSelectedProdId(e.target.value)}
+                        className="col-span-7 h-9 px-2.5 text-xs bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#7C5CFF]"
+                      >
+                        <option value="">Selecione o produto...</option>
+                        {products.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} - {formatMoney(p.defaultPrice)}
+                          </option>
+                        ))}
+                      </select>
+
+                      <input
+                        type="number"
+                        min="1"
+                        value={selectedProdQty}
+                        onChange={(e) => setSelectedProdQty(e.target.value)}
+                        className="col-span-2 h-9 px-1 text-xs text-center bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#7C5CFF]"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={handleAddToCart}
+                        className="col-span-3 h-9 bg-[#7C5CFF] hover:bg-[#6D4AFF] text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center space-x-1 shadow-xs"
+                      >
+                        <Plus size={14} />
+                        <span>Add</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* CART ITEMS */}
+                  <div className="space-y-2">
+                    <span className="text-xs font-bold text-[#1E293B]">Itens da Venda ({cart.length})</span>
+                    {cart.length === 0 ? (
+                      <div className="text-center py-4 text-xs text-[#71809D] border border-dashed border-[#E2E8F0] rounded-xl">
+                        Nenhum item adicionado à venda.
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                        {cart.map((item, idx) => (
+                          <div key={idx} className="p-2.5 bg-white rounded-xl border border-[#E2E8F0] flex items-center justify-between text-xs">
+                            <div className="flex-1 min-w-0 pr-2">
+                              <p className="font-bold text-[#1E293B] truncate">{item.name}</p>
+                              <span className="text-[10px] text-[#71809D]">{item.qty}x un</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-[11px] text-[#71809D]">Preço un:</span>
+                              <input
+                                type="number"
+                                step="0.50"
+                                value={item.unitPrice}
+                                onChange={(e) => handleUpdateCartPrice(idx, e.target.value)}
+                                className="w-16 h-7 px-1 text-right text-xs bg-[#F4F6FB] border border-[#E2E8F0] rounded-md"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFromCart(idx)}
+                                className="text-[#EF4444] hover:bg-[#EF4444]/10 p-1 rounded-md"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* PAYMENT CONDITION */}
+                  <div className="space-y-2 pt-2 border-t border-[#E2E8F0]">
+                    <label className="block text-xs font-bold text-[#1E293B]">Condição de Pagamento</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSalePaymentType('A_VISTA')}
+                        className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+                          salePaymentType === 'A_VISTA'
+                            ? 'bg-[#16B981] text-white border-[#16B981] shadow-xs'
+                            : 'bg-white text-[#71809D] border-[#E2E8F0] hover:bg-[#F4F6FB]'
+                        }`}
+                      >
+                        À Vista
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSalePaymentType('FIADO')}
+                        className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+                          salePaymentType === 'FIADO'
+                            ? 'bg-[#EF4444] text-white border-[#EF4444] shadow-xs'
+                            : 'bg-white text-[#71809D] border-[#E2E8F0] hover:bg-[#F4F6FB]'
+                        }`}
+                      >
+                        Fiado
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSalePaymentType('PARCIAL')}
+                        className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+                          salePaymentType === 'PARCIAL'
+                            ? 'bg-[#F5A623] text-white border-[#F5A623] shadow-xs'
+                            : 'bg-white text-[#71809D] border-[#E2E8F0] hover:bg-[#F4F6FB]'
+                        }`}
+                      >
+                        Parcial
+                      </button>
+                    </div>
+
+                    {salePaymentType === 'PARCIAL' && (
+                      <div className="p-3 bg-[#F5A623]/10 rounded-xl border border-[#F5A623]/20 space-y-2 mt-2">
+                        <label className="block text-xs font-bold text-[#1E293B]">Valor Pago Agora (R$)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="0,00"
+                          value={salePaidNow}
+                          onChange={(e) => setSalePaidNow(e.target.value)}
+                          className="w-full h-8 px-2.5 text-xs bg-white border border-[#E2E8F0] rounded-lg focus:outline-none"
+                        />
+                        <span className="text-[10px] text-[#71809D] block font-medium">
+                          Restante a fiado: <strong className="text-[#EF4444]">{formatMoney(Math.max(0, cartTotal - (parseFloat(salePaidNow) || 0)))}</strong>
+                        </span>
+                      </div>
+                    )}
+
+                    {salePaymentType !== 'FIADO' && (
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#71809D] mb-1">Meio de Recebimento</label>
+                        <select
+                          value={salePaymentMethod}
+                          onChange={(e) => setSalePaymentMethod(e.target.value)}
+                          className="w-full h-8 px-2.5 text-xs bg-white border border-[#E2E8F0] rounded-lg"
+                        >
+                          <option value="PIX">PIX</option>
+                          <option value="Dinheiro">Dinheiro em Espécie</option>
+                          <option value="Cartão de Débito">Cartão de Débito</option>
+                          <option value="Cartão de Crédito">Cartão de Crédito</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* SUMMARY TOTAL */}
+                  <div className="p-3 bg-[#F4F6FB] rounded-xl border border-[#E2E8F0] flex justify-between items-center">
+                    <span className="text-xs font-bold text-[#1E293B]">Total da Venda:</span>
+                    <span className="text-lg font-black text-[#7C5CFF]">{formatMoney(cartTotal)}</span>
+                  </div>
+
+                  {/* SUBMIT BUTTON */}
+                  <button
+                    type="submit"
+                    className="w-full h-10 bg-[#7C5CFF] hover:bg-[#6D4AFF] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center justify-center space-x-2"
+                  >
+                    <CheckCircle2 size={16} />
+                    <span>Concluir e Registrar Venda</span>
+                  </button>
+                </form>
+              </div>
+
+              {/* SALES HISTORIC (RIGHT 7 COLS) */}
+              <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E2E8F0] shadow-sm overflow-hidden flex flex-col">
+                <div className="p-4 border-b border-[#E2E8F0] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#1E293B]">Histórico de Vendas</h3>
+                    <p className="text-xs text-[#71809D]">Registradas em {activePeriod.name}</p>
+                  </div>
+
+                  <div className="relative w-full sm:w-60">
+                    <Search size={14} className="absolute left-3 top-2.5 text-[#71809D]" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por comprador..."
+                      value={salesSearch}
+                      onChange={(e) => setSalesSearch(e.target.value)}
+                      className="w-full h-8 pl-8 pr-3 text-xs bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#7C5CFF]"
+                    />
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#F4F6FB] text-[#71809D] font-bold border-b border-[#E2E8F0]">
+                      <tr>
+                        <th className="px-4 py-3">Comprador</th>
+                        <th className="px-4 py-3">Itens</th>
+                        <th className="px-4 py-3 text-right">Total</th>
+                        <th className="px-4 py-3 text-right">Pago</th>
+                        <th className="px-4 py-3 text-center">Status</th>
+                        <th className="px-4 py-3 text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2E8F0]">
+                      {currentPeriodSales
+                        .filter(s => s.buyerName.toLowerCase().includes(salesSearch.toLowerCase()))
+                        .map((sale) => (
+                          <tr key={sale.id} className="hover:bg-[#F4F6FB]/60 transition-colors">
+                            <td className="px-4 py-3">
+                              <div className="font-bold text-[#1E293B]">{sale.buyerName}</div>
+                              <div className="text-[10px] text-[#71809D]">{formatDate(sale.createdAt)}</div>
+                            </td>
+                            <td className="px-4 py-3 text-[#71809D] max-w-[160px] truncate">
+                              {sale.items.map(i => `${i.qty}x ${i.name}`).join(', ')}
+                            </td>
+                            <td className="px-4 py-3 text-right font-bold text-[#1E293B]">
+                              {formatMoney(sale.totalAmount)}
+                            </td>
+                            <td className="px-4 py-3 text-right font-semibold text-[#16B981]">
+                              {formatMoney(sale.paidAmount)}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                sale.status === 'Pago'
+                                  ? 'bg-[#16B981]/15 text-[#16B981]'
+                                  : sale.status === 'Parcial'
+                                  ? 'bg-[#F5A623]/15 text-[#F5A623]'
+                                  : 'bg-[#EF4444]/15 text-[#EF4444]'
+                              }`}>
+                                {sale.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Excluir o registro de venda ${sale.id}?`)) {
+                                    setSales(sales.filter(s => s.id !== sale.id));
+                                  }
+                                }}
+                                className="text-[#71809D] hover:text-[#EF4444] p-1 rounded-lg transition-colors"
+                                title="Excluir Venda"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* SCREEN 3: FINANCEIRO (SUB-TABS)                           */}
+          {/* ========================================================= */}
+          {activeTab === 'financeiro' && (
+            <div className="space-y-6">
+
+              {/* FINANCIAL SUB-TABS */}
+              <div className="flex border-b border-[#E2E8F0] space-x-6">
+                <button
+                  onClick={() => setFinancialSubTab('resumo')}
+                  className={`pb-3 text-xs font-extrabold transition-colors relative ${
+                    financialSubTab === 'resumo'
+                      ? 'text-[#7C5CFF] border-b-2 border-[#7C5CFF]'
+                      : 'text-[#71809D] hover:text-[#1E293B]'
+                  }`}
+                >
+                  Resumo Financeiro
+                </button>
+                <button
+                  onClick={() => setFinancialSubTab('despesas')}
+                  className={`pb-3 text-xs font-extrabold transition-colors relative ${
+                    financialSubTab === 'despesas'
+                      ? 'text-[#7C5CFF] border-b-2 border-[#7C5CFF]'
+                      : 'text-[#71809D] hover:text-[#1E293B]'
+                  }`}
+                >
+                  Despesas Operacionais ({currentPeriodExpenses.length})
+                </button>
+                <button
+                  onClick={() => setFinancialSubTab('compras')}
+                  className={`pb-3 text-xs font-extrabold transition-colors relative ${
+                    financialSubTab === 'compras'
+                      ? 'text-[#7C5CFF] border-b-2 border-[#7C5CFF]'
+                      : 'text-[#71809D] hover:text-[#1E293B]'
+                  }`}
+                >
+                  Compras de Mercadorias ({currentPeriodMerchandise.length})
+                </button>
+                <button
+                  onClick={() => setFinancialSubTab('fiados')}
+                  className={`pb-3 text-xs font-extrabold transition-colors relative ${
+                    financialSubTab === 'fiados'
+                      ? 'text-[#7C5CFF] border-b-2 border-[#7C5CFF]'
+                      : 'text-[#71809D] hover:text-[#1E293B]'
+                  }`}
+                >
+                  Cobrança de Fiados ({buyersWithDebt.length})
+                </button>
+              </div>
+
+              {/* SUB-TAB 1: RESUMO STATEMENT */}
+              {financialSubTab === 'resumo' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white p-4 rounded-2xl border border-[#E2E8F0] shadow-sm space-y-1">
+                      <span className="text-xs font-bold text-[#71809D]">1. Vendas à Vista</span>
+                      <div className="text-lg font-black text-[#16B981]">{formatMoney(metrics.directCashFromSales)}</div>
+                      <p className="text-[10px] text-[#71809D]">Entradas diretas</p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-2xl border border-[#E2E8F0] shadow-sm space-y-1">
+                      <span className="text-xs font-bold text-[#71809D]">2. Fiados Pagos Hoje</span>
+                      <div className="text-lg font-black text-[#16B981]">{formatMoney(metrics.debtCashReceivedThisPeriod)}</div>
+                      <p className="text-[10px] text-[#71809D]">Quitações recebidas no evento</p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-2xl border border-[#E2E8F0] shadow-sm space-y-1">
+                      <span className="text-xs font-bold text-[#71809D]">3. Custos Operacionais</span>
+                      <div className="text-lg font-black text-[#EF4444]">{formatMoney(metrics.totalExpenses + metrics.totalMerchandiseCost)}</div>
+                      <p className="text-[10px] text-[#71809D]">Despesas + Compras</p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-2xl border border-[#E2E8F0] shadow-sm space-y-1">
+                      <span className="text-xs font-bold text-[#71809D]">4. Saldo Real Líquido</span>
+                      <div className={`text-lg font-black ${metrics.netCashResult >= 0 ? 'text-[#16B981]' : 'text-[#EF4444]'}`}>
+                        {formatMoney(metrics.netCashResult)}
+                      </div>
+                      <p className="text-[10px] text-[#71809D]">Dinheiro em caixa</p>
+                    </div>
+                  </div>
+
+                  {/* STATEMENT BREAKDOWN TABLE */}
+                  <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm overflow-hidden">
+                    <div className="p-4 border-b border-[#E2E8F0]">
+                      <h3 className="text-sm font-bold text-[#1E293B]">Demonstrativo Consolidado do Período</h3>
+                      <p className="text-xs text-[#71809D]">Resumo do fluxo de caixa e pendências</p>
+                    </div>
+                    <div className="p-5 space-y-3 text-xs">
+                      <div className="flex justify-between py-2 border-b border-[#E2E8F0]">
+                        <span className="text-[#71809D]">Total de Faturamento Bruto (Todas as Vendas)</span>
+                        <strong className="text-[#1E293B] font-bold">{formatMoney(metrics.grossSalesTotal)}</strong>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-[#E2E8F0]">
+                        <span className="text-[#71809D] pl-4">(-) Vendas Fiadas Não Pagas do Período</span>
+                        <strong className="text-[#EF4444] font-semibold">- {formatMoney(metrics.periodPendingDebts)}</strong>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-[#E2E8F0]">
+                        <span className="text-[#71809D] pl-4">(+) Pagamentos de Fiados Recebidos no Caixa Hoje</span>
+                        <strong className="text-[#16B981] font-semibold">+ {formatMoney(metrics.debtCashReceivedThisPeriod)}</strong>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-[#E2E8F0] bg-[#F4F6FB] px-2 font-bold rounded-lg">
+                        <span>(=) Total Efetivo de Entradas em Dinheiro / PIX</span>
+                        <span className="text-[#16B981]">{formatMoney(metrics.totalCashReceived)}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-[#E2E8F0]">
+                        <span className="text-[#71809D]">(-) Total de Despesas Operacionais</span>
+                        <strong className="text-[#EF4444] font-semibold">- {formatMoney(metrics.totalExpenses)}</strong>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-[#E2E8F0]">
+                        <span className="text-[#71809D]">(-) Total de Compras de Mercadorias</span>
+                        <strong className="text-[#EF4444] font-semibold">- {formatMoney(metrics.totalMerchandiseCost)}</strong>
+                      </div>
+                      <div className="flex justify-between py-3 bg-[#7C5CFF]/10 px-4 rounded-xl text-sm font-black text-[#1E293B]">
+                        <span>(=) RESULTADO LÍQUIDO DO EVENTO</span>
+                        <span className={metrics.netCashResult >= 0 ? 'text-[#16B981]' : 'text-[#EF4444]'}>
+                          {formatMoney(metrics.netCashResult)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 2: OPERATIONAL EXPENSES */}
+              {financialSubTab === 'despesas' && (
+                <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-[#1E293B]">Despesas Operacionais do Evento</h3>
+                      <p className="text-xs text-[#71809D]">Gastos com estrutura, alimentação, transporte e equipe</p>
+                    </div>
+                    <button
+                      onClick={() => setModalNewExpense(true)}
+                      className="h-8 px-3 bg-[#7C5CFF] text-white text-xs font-bold rounded-xl flex items-center space-x-1 shadow-xs"
+                    >
+                      <Plus size={14} />
+                      <span>Nova Despesa</span>
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-[#F4F6FB] text-[#71809D] font-bold border-b border-[#E2E8F0]">
+                        <tr>
+                          <th className="px-4 py-3">Descrição</th>
+                          <th className="px-4 py-3">Categoria</th>
+                          <th className="px-4 py-3">Data</th>
+                          <th className="px-4 py-3 text-right">Valor</th>
+                          <th className="px-4 py-3 text-center">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E2E8F0]">
+                        {currentPeriodExpenses.length === 0 ? (
+                          <tr>
+                            <td colSpan="5" className="px-4 py-8 text-center text-[#71809D]">
+                              Nenhuma despesa operacional cadastrada.
+                            </td>
+                          </tr>
+                        ) : (
+                          currentPeriodExpenses.map((exp) => (
+                            <tr key={exp.id} className="hover:bg-[#F4F6FB]/60">
+                              <td className="px-4 py-3.5 font-bold text-[#1E293B]">{exp.description}</td>
+                              <td className="px-4 py-3.5 text-[#71809D]">{exp.category}</td>
+                              <td className="px-4 py-3.5 text-[#71809D]">{exp.date}</td>
+                              <td className="px-4 py-3.5 text-right font-black text-[#EF4444]">- {formatMoney(exp.amount)}</td>
+                              <td className="px-4 py-3.5 text-center">
+                                <button
+                                  onClick={() => setExpenses(expenses.filter(e => e.id !== exp.id))}
+                                  className="text-[#71809D] hover:text-[#EF4444] p-1"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 3: MERCHANDISE PURCHASES */}
+              {financialSubTab === 'compras' && (
+                <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-[#1E293B]">Compras de Mercadorias para Venda</h3>
+                      <p className="text-xs text-[#71809D]">Aquisições de produtos, lote inicial do evento e fornecedores</p>
+                    </div>
+                    <button
+                      onClick={() => setModalNewMerchandise(true)}
+                      className="h-8 px-3 bg-[#7C5CFF] text-white text-xs font-bold rounded-xl flex items-center space-x-1 shadow-xs"
+                    >
+                      <Plus size={14} />
+                      <span>Nova Compra</span>
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-[#F4F6FB] text-[#71809D] font-bold border-b border-[#E2E8F0]">
+                        <tr>
+                          <th className="px-4 py-3">Fornecedor</th>
+                          <th className="px-4 py-3">Descrição da Compra</th>
+                          <th className="px-4 py-3">Nota Fiscal / Comprovante</th>
+                          <th className="px-4 py-3">Data</th>
+                          <th className="px-4 py-3 text-right">Valor Total</th>
+                          <th className="px-4 py-3 text-center">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E2E8F0]">
+                        {currentPeriodMerchandise.length === 0 ? (
+                          <tr>
+                            <td colSpan="6" className="px-4 py-8 text-center text-[#71809D]">
+                              Nenhuma compra de mercadoria registrada neste evento.
+                            </td>
+                          </tr>
+                        ) : (
+                          currentPeriodMerchandise.map((mer) => (
+                            <tr key={mer.id} className="hover:bg-[#F4F6FB]/60">
+                              <td className="px-4 py-3.5 font-bold text-[#1E293B]">{mer.supplier}</td>
+                              <td className="px-4 py-3.5 text-[#1E293B]">{mer.description}</td>
+                              <td className="px-4 py-3.5">
+                                <span className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                  mer.hasInvoice ? 'bg-[#16B981]/15 text-[#16B981]' : 'bg-[#71809D]/15 text-[#71809D]'
+                                }`}>
+                                  <Paperclip size={10} />
+                                  <span>{mer.invoiceRef || 'Sem anexo'}</span>
+                                </span>
+                              </td>
+                              <td className="px-4 py-3.5 text-[#71809D]">{mer.date}</td>
+                              <td className="px-4 py-3.5 text-right font-black text-[#EF4444]">- {formatMoney(mer.amount)}</td>
+                              <td className="px-4 py-3.5 text-center">
+                                <button
+                                  onClick={() => setMerchandise(merchandise.filter(m => m.id !== mer.id))}
+                                  className="text-[#71809D] hover:text-[#EF4444] p-1"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 4: FIADO DEBT REPAYMENTS */}
+              {financialSubTab === 'fiados' && (
+                <div className="space-y-6">
+                  <div className="bg-white rounded-2xl border border-[#E2E8F0] p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-[#1E293B]">Gestão e Recebimento de Fiados</h3>
+                      <p className="text-xs text-[#71809D]">Dívidas agrupadas por comprador (acumula histórico de todos os eventos)</p>
+                    </div>
+
+                    <div className="relative w-full sm:w-64">
+                      <Search size={14} className="absolute left-3 top-2.5 text-[#71809D]" />
+                      <input
+                        type="text"
+                        placeholder="Filtrar por nome do devedor..."
+                        value={debtSearch}
+                        onChange={(e) => setDebtSearch(e.target.value)}
+                        className="w-full h-8 pl-8 pr-3 text-xs bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#7C5CFF]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {buyersWithDebt
+                      .filter(b => b.buyerName.toLowerCase().includes(debtSearch.toLowerCase()))
+                      .map((debtor) => (
+                        <div key={debtor.buyerName} className="bg-white rounded-2xl border border-[#E2E8F0] p-4 shadow-sm space-y-3">
+                          <div className="flex justify-between items-start border-b border-[#E2E8F0] pb-2">
+                            <div>
+                              <h4 className="text-sm font-bold text-[#1E293B]">{debtor.buyerName}</h4>
+                              <p className="text-[11px] text-[#71809D]">{debtor.salesList.length} compra(s) fiada(s) pendente(s)</p>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[10px] font-bold text-[#71809D] uppercase block">Total Deve</span>
+                              <span className="text-base font-black text-[#EF4444]">{formatMoney(debtor.totalPending)}</span>
+                            </div>
+                          </div>
+
+                          {/* HISTÓRICO DAS VENDAS FIADAS DESTE COMPRADOR */}
+                          <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                            {debtor.salesList.map((s) => (
+                              <div key={s.id} className="p-2 bg-[#F4F6FB] rounded-lg text-xs flex justify-between items-center">
+                                <div>
+                                  <span className="font-bold text-[#1E293B]">{s.id}</span>
+                                  <span className="text-[10px] text-[#71809D] ml-2">({formatDate(s.createdAt)})</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-[#EF4444] font-extrabold">{formatMoney(s.pendingAmount)}</span>
+                                  <span className="text-[10px] text-[#71809D] block">de {formatMoney(s.totalAmount)}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              setModalPayDebt(debtor);
+                              setDebtPayForm({ amount: debtor.totalPending.toString(), paymentMethod: 'PIX' });
+                            }}
+                            className="w-full h-9 bg-[#16B981] hover:bg-[#138a59] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center justify-center space-x-1.5"
+                          >
+                            <DollarSign size={15} />
+                            <span>Registrar Recebimento / Quitação</span>
+                          </button>
+                        </div>
+                      ))}
+
+                    {buyersWithDebt.length === 0 && (
+                      <div className="col-span-2 text-center py-12 bg-white rounded-2xl border border-[#E2E8F0] shadow-sm text-[#71809D] text-xs">
+                        <CheckCircle2 size={32} className="mx-auto text-[#16B981] mb-2" />
+                        Parabéns! Não há dívidas fiadas pendentes cadastradas no sistema.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* SCREEN 4: PERÍODOS (EVENTOS / CAMPEONATOS)                */}
+          {/* ========================================================= */}
+          {activeTab === 'periodos' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#1E293B]">Períodos de Vendas (Campeonatos / Eventos)</h3>
+                    <p className="text-xs text-[#71809D]">Cada período isola suas vendas e despesas. Dívidas de devedores continuam globais.</p>
+                  </div>
+                  <button
+                    onClick={() => setModalNewPeriod(true)}
+                    className="h-9 px-4 bg-[#7C5CFF] text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow-xs"
+                  >
+                    <Plus size={15} />
+                    <span>Novo Período</span>
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#F4F6FB] text-[#71809D] font-bold border-b border-[#E2E8F0]">
+                      <tr>
+                        <th className="px-4 py-3">Nome do Evento / Campeonato</th>
+                        <th className="px-4 py-3">Localização</th>
+                        <th className="px-4 py-3">Data Início / Fim</th>
+                        <th className="px-4 py-3 text-center">Status</th>
+                        <th className="px-4 py-3 text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2E8F0]">
+                      {periods.map((per) => {
+                        const isSelected = per.id === activePeriodId;
+                        return (
+                          <tr key={per.id} className={`hover:bg-[#F4F6FB]/60 ${isSelected ? 'bg-[#7C5CFF]/5' : ''}`}>
+                            <td className="px-4 py-3.5 font-bold text-[#1E293B]">
+                              {per.name}
+                              {isSelected && (
+                                <span className="ml-2 text-[10px] bg-[#7C5CFF] text-white font-black px-2 py-0.5 rounded-full">
+                                  SELECIONADO
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3.5 text-[#71809D]">{per.location}</td>
+                            <td className="px-4 py-3.5 text-[#71809D]">
+                              {per.startDate} até {per.endDate}
+                            </td>
+                            <td className="px-4 py-3.5 text-center">
+                              <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                per.status === 'Ativo' ? 'bg-[#16B981]/15 text-[#16B981]' : 'bg-[#71809D]/15 text-[#71809D]'
+                              }`}>
+                                {per.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5 text-center">
+                              <div className="flex items-center justify-center space-x-2">
+                                {!isSelected && (
+                                  <button
+                                    onClick={() => setActivePeriodId(per.id)}
+                                    className="h-7 px-3 bg-white border border-[#E2E8F0] hover:bg-[#F4F6FB] text-[#7C5CFF] text-[11px] font-bold rounded-lg transition-colors"
+                                  >
+                                    Alternar para Este
+                                  </button>
+                                )}
+
+                                <button
+                                  onClick={() => {
+                                    setPeriods(periods.map(p => p.id === per.id ? {
+                                      ...p,
+                                      status: p.status === 'Ativo' ? 'Encerrado' : 'Ativo'
+                                    } : p));
+                                  }}
+                                  className="h-7 px-2.5 bg-white border border-[#E2E8F0] hover:bg-[#F4F6FB] text-[#71809D] text-[11px] font-bold rounded-lg"
+                                >
+                                  {per.status === 'Ativo' ? 'Encerrar' : 'Reabrir'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* SCREEN 5: PRODUTOS (CATÁLOGO SEM ESTOQUE FALSO)           */}
+          {/* ========================================================= */}
+          {activeTab === 'produtos' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-[#E2E8F0] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#1E293B]">Catálogo de Produtos e Preços</h3>
+                    <p className="text-xs text-[#71809D]">Cadastro rápido para seleção no momento da venda (Sem controle de estoque)</p>
+                  </div>
+
+                  <div className="relative w-full sm:w-64">
+                    <Search size={14} className="absolute left-3 top-2.5 text-[#71809D]" />
+                    <input
+                      type="text"
+                      placeholder="Buscar produto ou categoria..."
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      className="w-full h-8 pl-8 pr-3 text-xs bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#7C5CFF]"
+                    />
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#F4F6FB] text-[#71809D] font-bold border-b border-[#E2E8F0]">
+                      <tr>
+                        <th className="px-4 py-3">Item / Nome</th>
+                        <th className="px-4 py-3">Categoria</th>
+                        <th className="px-4 py-3 text-right">Preço de Custo</th>
+                        <th className="px-4 py-3 text-right">Preço Padrão de Venda</th>
+                        <th className="px-4 py-3 text-right">Margem Est.</th>
+                        <th className="px-4 py-3 text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2E8F0]">
+                      {products
+                        .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()) || p.category.toLowerCase().includes(productSearch.toLowerCase()))
+                        .map((prod) => {
+                          const margin = prod.defaultPrice - prod.costPrice;
+                          return (
+                            <tr key={prod.id} className="hover:bg-[#F4F6FB]/60">
+                              <td className="px-4 py-3.5 font-bold text-[#1E293B]">{prod.name}</td>
+                              <td className="px-4 py-3.5 text-[#71809D]">{prod.category}</td>
+                              <td className="px-4 py-3.5 text-right text-[#71809D]">{formatMoney(prod.costPrice)}</td>
+                              <td className="px-4 py-3.5 text-right font-black text-[#1E293B]">{formatMoney(prod.defaultPrice)}</td>
+                              <td className="px-4 py-3.5 text-right font-bold text-[#16B981]">
+                                +{formatMoney(margin)}
+                              </td>
+                              <td className="px-4 py-3.5 text-center">
+                                <div className="flex items-center justify-center space-x-2">
+                                  <button
+                                    onClick={() => setModalEditProduct(prod)}
+                                    className="text-[#7C5CFF] hover:bg-[#7C5CFF]/10 px-2 py-1 rounded-md font-bold"
+                                    title="Editar Preços"
+                                  >
+                                    Editar
+                                  </button>
+                                  <button
+                                    onClick={() => setProducts(products.filter(p => p.id !== prod.id))}
+                                    className="text-[#EF4444] hover:bg-[#EF4444]/10 p-1 rounded-md"
+                                    title="Remover Item"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </main>
+
+      {/* ========================================================= */}
+      {/* ALL MODALS (STANDARDIZED POLOCOIN UI)                     */}
+      {/* ========================================================= */}
+
+      {/* MODAL: REGISTRAR QUITAÇÃO DE FIADO */}
+      {modalPayDebt && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-[#E2E8F0] w-full max-w-md overflow-hidden shadow-xl">
+            <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between bg-[#F4F6FB]">
+              <div>
+                <h3 className="text-sm font-bold text-[#1E293B]">Receber Pagamento de Fiado</h3>
+                <p className="text-xs text-[#71809D]">Comprador: <strong>{modalPayDebt.buyerName}</strong></p>
+              </div>
+              <button onClick={() => setModalPayDebt(null)} className="text-[#71809D] hover:text-[#1E293B]">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handlePayDebtSubmit} className="p-5 space-y-4">
+              <div className="p-3 bg-[#EF4444]/10 rounded-xl border border-[#EF4444]/20">
+                <span className="text-xs text-[#71809D] block">Total Pendente Acumulado:</span>
+                <span className="text-lg font-black text-[#EF4444]">{formatMoney(modalPayDebt.totalPending)}</span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#1E293B] mb-1">Valor Sendo Pago Agora (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  placeholder="0,00"
+                  value={debtPayForm.amount}
+                  onChange={(e) => setDebtPayForm({ ...debtPayForm, amount: e.target.value })}
+                  className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF] text-[#1E293B]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#1E293B] mb-1">Meio de Pagamento</label>
+                <select
+                  value={debtPayForm.paymentMethod}
+                  onChange={(e) => setDebtPayForm({ ...debtPayForm, paymentMethod: e.target.value })}
+                  className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                >
+                  <option value="PIX">PIX</option>
+                  <option value="Dinheiro">Dinheiro em Espécie</option>
+                  <option value="Cartão de Débito">Cartão de Débito</option>
+                  <option value="Cartão de Crédito">Cartão de Crédito</option>
+                </select>
+              </div>
+
+              <p className="text-[11px] text-[#71809D]">
+                Este valor entrará no caixa do período ativo (<strong>{activePeriod.name}</strong>) na data de hoje.
+              </p>
+
+              <div className="pt-3 border-t border-[#E2E8F0] flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setModalPayDebt(null)}
+                  className="h-9 px-4 bg-white border border-[#E2E8F0] text-[#1E293B] text-xs font-bold rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="h-9 px-4 bg-[#16B981] hover:bg-[#138a59] text-white text-xs font-extrabold rounded-xl shadow-xs"
+                >
+                  Confirmar Recebimento
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: NOVO PERÍODO */}
+      {modalNewPeriod && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-[#E2E8F0] w-full max-w-md overflow-hidden shadow-xl">
+            <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
+              <h3 className="text-sm font-bold text-[#1E293B]">Criar Período / Campeonato</h3>
+              <button onClick={() => setModalNewPeriod(false)} className="text-[#71809D] hover:text-[#1E293B]">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePeriod} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#1E293B] mb-1">Nome do Evento / Torneio</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Campeonato de Inverno 2026"
+                  value={periodForm.name}
+                  onChange={(e) => setPeriodForm({ ...periodForm, name: e.target.value })}
+                  className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#1E293B] mb-1">Localização</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Ginásio Municipal, Arena Beach"
+                  value={periodForm.location}
+                  onChange={(e) => setPeriodForm({ ...periodForm, location: e.target.value })}
+                  className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Data Início</label>
+                  <input
+                    type="date"
+                    value={periodForm.startDate}
+                    onChange={(e) => setPeriodForm({ ...periodForm, startDate: e.target.value })}
+                    className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Data Fim</label>
+                  <input
+                    type="date"
+                    value={periodForm.endDate}
+                    onChange={(e) => setPeriodForm({ ...periodForm, endDate: e.target.value })}
+                    className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-[#E2E8F0] flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setModalNewPeriod(false)}
+                  className="h-9 px-4 bg-white border border-[#E2E8F0] text-[#1E293B] text-xs font-bold rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="h-9 px-4 bg-[#7C5CFF] text-white text-xs font-extrabold rounded-xl shadow-xs"
+                >
+                  Salvar e Ativar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: NOVO PRODUTO */}
+      {modalNewProduct && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-[#E2E8F0] w-full max-w-md overflow-hidden shadow-xl">
+            <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
+              <h3 className="text-sm font-bold text-[#1E293B]">Cadastrar Produto</h3>
+              <button onClick={() => setModalNewProduct(false)} className="text-[#71809D] hover:text-[#1E293B]">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateProduct} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#1E293B] mb-1">Nome do Item</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Cerveja Lata 350ml"
+                  value={productForm.name}
+                  onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                  className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#1E293B] mb-1">Categoria</label>
+                <select
+                  value={productForm.category}
+                  onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                  className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                >
+                  <option value="Bebidas">Bebidas</option>
+                  <option value="Alimentação">Alimentação</option>
+                  <option value="Vestuário">Vestuário / Souvenirs</option>
+                  <option value="Inscrições">Inscrições e Taxas</option>
+                  <option value="Outros">Outros</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Preço Custo (R$)</label>
+                  <input
+                    type="number"
+                    step="0.10"
+                    placeholder="0,00"
+                    value={productForm.costPrice}
+                    onChange={(e) => setProductForm({ ...productForm, costPrice: e.target.value })}
+                    className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Preço Venda (R$)</label>
+                  <input
+                    type="number"
+                    step="0.50"
+                    required
+                    placeholder="0,00"
+                    value={productForm.defaultPrice}
+                    onChange={(e) => setProductForm({ ...productForm, defaultPrice: e.target.value })}
+                    className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-[#E2E8F0] flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setModalNewProduct(false)}
+                  className="h-9 px-4 bg-white border border-[#E2E8F0] text-[#1E293B] text-xs font-bold rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="h-9 px-4 bg-[#7C5CFF] text-white text-xs font-extrabold rounded-xl shadow-xs"
+                >
+                  Cadastrar Produto
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDITAR PRODUTO */}
+      {modalEditProduct && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-[#E2E8F0] w-full max-w-md overflow-hidden shadow-xl">
+            <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
+              <h3 className="text-sm font-bold text-[#1E293B]">Editar Produto</h3>
+              <button onClick={() => setModalEditProduct(null)} className="text-[#71809D] hover:text-[#1E293B]">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditedProduct} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#1E293B] mb-1">Nome do Item</label>
+                <input
+                  type="text"
+                  required
+                  value={modalEditProduct.name}
+                  onChange={(e) => setModalEditProduct({ ...modalEditProduct, name: e.target.value })}
+                  className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Preço Custo (R$)</label>
+                  <input
+                    type="number"
+                    step="0.10"
+                    value={modalEditProduct.costPrice}
+                    onChange={(e) => setModalEditProduct({ ...modalEditProduct, costPrice: parseFloat(e.target.value) || 0 })}
+                    className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Preço Venda (R$)</label>
+                  <input
+                    type="number"
+                    step="0.50"
+                    value={modalEditProduct.defaultPrice}
+                    onChange={(e) => setModalEditProduct({ ...modalEditProduct, defaultPrice: parseFloat(e.target.value) || 0 })}
+                    className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-[#E2E8F0] flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setModalEditProduct(null)}
+                  className="h-9 px-4 bg-white border border-[#E2E8F0] text-[#1E293B] text-xs font-bold rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="h-9 px-4 bg-[#7C5CFF] text-white text-xs font-extrabold rounded-xl shadow-xs"
+                >
+                  Salvar Alterações
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: NOVA DESPESA OPERACIONAL */}
+      {modalNewExpense && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-[#E2E8F0] w-full max-w-md overflow-hidden shadow-xl">
+            <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
+              <h3 className="text-sm font-bold text-[#1E293B]">Lançar Despesa Operacional</h3>
+              <button onClick={() => setModalNewExpense(false)} className="text-[#71809D] hover:text-[#1E293B]">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateExpense} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#1E293B] mb-1">Descrição do Gasto</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Aluguel do som e locução"
+                  value={expenseForm.description}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
+                  className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Categoria</label>
+                  <select
+                    value={expenseForm.category}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
+                    className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                  >
+                    <option value="Infraestrutura">Infraestrutura</option>
+                    <option value="Alimentação">Alimentação / Staff</option>
+                    <option value="Transporte">Transporte / Combustível</option>
+                    <option value="Taxas">Taxas e Inscrições</option>
+                    <option value="Outros">Outros</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Valor (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="0,00"
+                    value={expenseForm.amount}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                    className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-[#E2E8F0] flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setModalNewExpense(false)}
+                  className="h-9 px-4 bg-white border border-[#E2E8F0] text-[#1E293B] text-xs font-bold rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="h-9 px-4 bg-[#7C5CFF] text-white text-xs font-extrabold rounded-xl shadow-xs"
+                >
+                  Salvar Despesa
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: NOVA COMPRA DE MERCADORIA */}
+      {modalNewMerchandise && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-[#E2E8F0] w-full max-w-md overflow-hidden shadow-xl">
+            <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
+              <h3 className="text-sm font-bold text-[#1E293B]">Registrar Compra de Mercadoria</h3>
+              <button onClick={() => setModalNewMerchandise(false)} className="text-[#71809D] hover:text-[#1E293B]">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateMerchandise} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#1E293B] mb-1">Fornecedor</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Distribuidora de Bebidas X"
+                  value={merchandiseForm.supplier}
+                  onChange={(e) => setMerchandiseForm({ ...merchandiseForm, supplier: e.target.value })}
+                  className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#1E293B] mb-1">Descrição do Lote de Produtos</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: 10 caixas de gelo + 20 fardos de água"
+                  value={merchandiseForm.description}
+                  onChange={(e) => setMerchandiseForm({ ...merchandiseForm, description: e.target.value })}
+                  className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Valor Total (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="0,00"
+                    value={merchandiseForm.amount}
+                    onChange={(e) => setMerchandiseForm({ ...merchandiseForm, amount: e.target.value })}
+                    className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Ref. Nota Fiscal / Recibo</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: NF-10948"
+                    value={merchandiseForm.invoiceRef}
+                    onChange={(e) => setMerchandiseForm({ ...merchandiseForm, invoiceRef: e.target.value })}
+                    className="w-full h-9 px-3 text-xs bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#7C5CFF]"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-[#E2E8F0] flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setModalNewMerchandise(false)}
+                  className="h-9 px-4 bg-white border border-[#E2E8F0] text-[#1E293B] text-xs font-bold rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="h-9 px-4 bg-[#7C5CFF] text-white text-xs font-extrabold rounded-xl shadow-xs"
+                >
+                  Registrar Compra
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}

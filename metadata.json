@@ -1,0 +1,6 @@
+{
+  "name": "EventSales — Gestão de Eventos e Caixa",
+  "description": "Sistema de vendas rápidas, frente de caixa, controle de fiados, despesas operacionais e fechamento financeiro por evento ou campeonato.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
